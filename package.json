@@ -1,0 +1,9 @@
+{
+  "name": "vid-script-generator",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "dotenv": "^17.4.0",
+    "openai": "^4.47.1"
+  }
+}

@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>숏폼 기획안 자동 생성</title>
+  <meta name="description" content="롱폼 영상의 대본 파일을 업로드하면 AI가 최적의 숏폼 기획안을 자동으로 추출해 드립니다." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --color-bg: #F8F9FA;
+      --color-white: #FFFFFF;
+      --color-primary: #2563EB;
+      --color-primary-hover: #1D4ED8;
+      --color-primary-light: #EFF6FF;
+      --color-border: #E5E7EB;
+      --color-border-dashed: #93C5FD;
+      --color-text-main: #111827;
+      --color-text-sub: #6B7280;
+      --color-text-helper: #9CA3AF;
+      --color-disabled-bg: #F3F4F6;
+      --color-disabled-text: #9CA3AF;
+      --color-file-bg: #FFFFFF;
+      --color-file-border: #E5E7EB;
+      --color-danger: #EF4444;
+      --radius-card: 16px;
+      --radius-btn: 10px;
+      --radius-file: 10px;
+      --shadow-card: 0 4px 24px 0 rgba(0, 0, 0, 0.08), 0 1px 4px 0 rgba(0, 0, 0, 0.04);
+      --font: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --transition: 0.2s ease;
+    }
+
+    body {
+      font-family: var(--font);
+      background-color: var(--color-bg);
+      color: var(--color-text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── NAV BAR ─── */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      height: 56px;
+      background: var(--color-white);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .navbar__title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--color-text-main);
+      letter-spacing: -0.2px;
+    }
+
+    /* ─── MAIN LAYOUT ─── */
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 88px 24px 48px;
+    }
+
+    /* ─── CARD ─── */
+    .card {
+      background: var(--color-white);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      width: 100%;
+      max-width: 660px;
+      padding: 48px 0 40px;
+    }
+
+    .card__header {
+      text-align: center;
+      padding: 0 40px;
+      margin-bottom: 36px;
+    }
+
+    .card__title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--color-text-main);
+      letter-spacing: -0.4px;
+      margin-bottom: 10px;
+    }
+
+    .card__subtitle {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--color-text-sub);
+      line-height: 1.6;
+      letter-spacing: -0.1px;
+    }
+
+    /* ─── UPLOAD SECTION ─── */
+    .upload-section {
+      padding: 0 32px;
+    }
+
+    .upload-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-main);
+      margin-bottom: 10px;
+      letter-spacing: -0.1px;
+    }
+
+    /* ─── DROP ZONE ─── */
+    .dropzone {
+      position: relative;
+      border: 1.5px dashed var(--color-border-dashed);
+      border-radius: 12px;
+      background: var(--color-primary-light);
+      padding: 36px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition), transform var(--transition);
+      user-select: none;
+    }
+
+    .dropzone:hover {
+      border-color: var(--color-primary);
+      background: #DBEAFE;
+    }
+
+    .dropzone.drag-over {
+      border-color: var(--color-primary);
+      background: #DBEAFE;
+      transform: scale(1.01);
+    }
+
+    .dropzone__input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .dropzone__icon {
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dropzone__text {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-text-sub);
+      text-align: center;
+      line-height: 1.5;
+      pointer-events: none;
+    }
+
+    .dropzone__text strong {
+      color: var(--color-primary);
+      font-weight: 600;
+    }
+
+    /* ─── HELPER TEXT ─── */
+    .helper-text {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--color-text-helper);
+      text-align: left;
+      letter-spacing: -0.1px;
+    }
+
+    /* ─── FILE LIST ─── */
+    .file-list {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--color-file-bg);
+      border: 1px solid var(--color-file-border);
+      border-radius: var(--radius-file);
+      padding: 11px 14px;
+      animation: slideIn 0.18s ease both;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .file-item__icon {
+      flex-shrink: 0;
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+    }
+
+    .file-item__info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .file-item__name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: -0.1px;
+    }
+
+    .file-item__size {
+      font-size: 11px;
+      color: var(--color-text-helper);
+      margin-top: 2px;
+    }
+
+    .file-item__remove {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--color-text-helper);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .file-item__remove:hover {
+      background: #FEE2E2;
+      color: var(--color-danger);
+    }
+
+    /* ─── CTA BUTTON ─── */
+    .cta-wrap {
+      padding: 28px 32px 0;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.1px;
+      padding: 11px 24px;
+      border-radius: var(--radius-btn);
+      border: none;
+      cursor: not-allowed;
+      background: var(--color-disabled-bg);
+      color: var(--color-disabled-text);
+      transition: background var(--transition), color var(--transition), box-shadow var(--transition), transform var(--transition);
+    }
+
+    .cta-btn.active {
+      cursor: pointer;
+      background: var(--color-primary);
+      color: var(--color-white);
+      box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.35);
+    }
+
+    .cta-btn.active:hover {
+      background: var(--color-primary-hover);
+      box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .cta-btn.active:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px 0 rgba(37, 99, 235, 0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV BAR -->
+  <nav class="navbar" role="banner">
+    <span class="navbar__title">숏폼 기획안 자동 생성</span>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="card" role="main">
+
+      <!-- Header -->
+      <div class="card__header">
+        <h2 class="card__title">AI 숏폼 컷편집 자동 추출</h2>
+        <p class="card__subtitle">
+          롱폼 영상의 대본 파일(.srt, .txt)을 업로드하면,<br />
+          최적의 숏폼 기획안을 찾아드립니다.
+        </p>
+      </div>
+
+      <!-- Upload Section -->
+      <div class="upload-section">
+        <label class="upload-label" for="file-input">파일 업로드</label>
+
+        <!-- Drop Zone -->
+        <div
+          class="dropzone"
+          id="dropzone"
+          role="button"
+          tabindex="0"
+          aria-label="파일을 드래그 앤 드롭하거나 클릭하여 선택하세요"
+        >
+          <input
+            type="file"
+            id="file-input"
+            class="dropzone__input"
+            accept=".srt,.vtt,.txt"
+            aria-label="파일 업로드 입력"
+          />
+          <span class="dropzone__icon" aria-hidden="true">
+            <!-- Upload icon -->
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </span>
+          <p class="dropzone__text">
+            <strong>파일 선택</strong> 또는 파일을 드래그 앤 드롭해주세요.
+          </p>
+        </div>
+
+        <!-- Helper -->
+        <p class="helper-text">지원 형식: .srt, .vtt, .txt &nbsp;|&nbsp; 최대 1시간 분량 권장</p>
+
+        <!-- File List -->
+        <div class="file-list" id="file-list" role="list" aria-label="첨부된 파일 목록"></div>
+      </div>
+
+      <!-- CTA -->
+      <div class="cta-wrap">
+        <button
+          class="cta-btn"
+          id="cta-btn"
+          disabled
+          aria-disabled="true"
+          aria-label="숏폼 구간 추출하기"
+        >
+          숏폼 구간 추출하기
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      const dropzone  = document.getElementById('dropzone');
+      const fileInput = document.getElementById('file-input');
+      const fileList  = document.getElementById('file-list');
+      const ctaBtn    = document.getElementById('cta-btn');
+
+      let attachedFile = null;
+      let isLoading    = false;
+
+      /* ── Helpers ── */
+      function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+      }
+
+      function updateCTA() {
+        const hasFile = attachedFile !== null && !isLoading;
+        ctaBtn.disabled = !hasFile;
+        ctaBtn.setAttribute('aria-disabled', String(!hasFile));
+        ctaBtn.classList.toggle('active', hasFile);
+      }
+
+      /* ── Toast ── */
+      function showToast(msg, isError = true) {
+        let toast = document.getElementById('__toast');
+        if (!toast) {
+          toast = document.createElement('div');
+          toast.id = '__toast';
+          Object.assign(toast.style, {
+            position: 'fixed', bottom: '32px', left: '50%',
+            transform: 'translateX(-50%) translateY(20px)',
+            background: isError ? '#EF4444' : '#111827',
+            color: '#fff', fontFamily: 'inherit',
+            fontSize: '13.5px', fontWeight: '500',
+            padding: '11px 22px', borderRadius: '100px',
+            opacity: '0', pointerEvents: 'none',
+            transition: 'opacity .25s ease, transform .25s ease',
+            zIndex: '9999', whiteSpace: 'nowrap',
+          });
+          document.body.appendChild(toast);
+        }
+        toast.textContent = msg;
+        toast.style.background = isError ? '#EF4444' : '#111827';
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateX(-50%) translateY(20px)';
+        }, 3500);
+      }
+
+      /* ── File rendering ── */
+      function renderFile(file) {
+        fileList.innerHTML = '';
+        if (!file) return;
+        const item = document.createElement('div');
+        item.className = 'file-item';
+        item.setAttribute('role', 'listitem');
+        item.innerHTML = `
+          <span class="file-item__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </span>
+          <div class="file-item__info">
+            <p class="file-item__name" title="${file.name}">${file.name}</p>
+            <p class="file-item__size">${formatBytes(file.size)}</p>
+          </div>
+          <button class="file-item__remove" id="remove-btn" aria-label="파일 삭제: ${file.name}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        `;
+        item.querySelector('#remove-btn').addEventListener('click', removeFile);
+        fileList.appendChild(item);
+      }
+
+      function setFile(file) {
+        if (!file) return;
+        attachedFile = file;
+        renderFile(file);
+        updateCTA();
+      }
+
+      function removeFile() {
+        attachedFile = null;
+        fileList.innerHTML = '';
+        fileInput.value = '';
+        updateCTA();
+      }
+
+      /* ── SRT/VTT/TXT Preprocessing ── */
+      function preprocessScript(raw, filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+
+        if (ext === 'srt') {
+          const blocks = raw.split(/\n\n+/);
+          return blocks.map(block => {
+            const lines = block.trim().split('\n');
+            if (lines.length < 2) return '';
+            const tcIdx = lines.findIndex(l => /-->/.test(l));
+            if (tcIdx === -1) return '';
+            const tcLine = lines[tcIdx];
+            const match = tcLine.match(/(\d{2}:\d{2}:\d{2}),\d{3}\s*-->\s*(\d{2}:\d{2}:\d{2}),\d{3}/);
+            if (!match) return '';
+            const [, start, end] = match;
+            const text = lines.slice(tcIdx + 1).join(' ').replace(/<[^>]+>/g, '').trim();
+            if (!text) return '';
+            return `[${start} - ${end}] ${text}`;
+          }).filter(Boolean).join('\n');
+        }
+
+        if (ext === 'vtt') {
+          const lines = raw.split('\n');
+          const result = [];
+          let currentStart = '', currentEnd = '', texts = [];
+          for (const line of lines) {
+            if (/WEBVTT|NOTE|STYLE|REGION/.test(line.trim())) continue;
+            const tc = line.match(/(\d{2}:\d{2}:\d{2}\.\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}\.\d{3})/);
+            if (tc) {
+              if (texts.length > 0) {
+                result.push(`[${currentStart} - ${currentEnd}] ${texts.join(' ')}`);
+              }
+              currentStart = tc[1].slice(0, 8);
+              currentEnd   = tc[2].slice(0, 8);
+              texts = [];
+            } else if (line.trim() && !/^\d+$/.test(line.trim())) {
+              texts.push(line.replace(/<[^>]+>/g, '').trim());
+            }
+          }
+          if (texts.length > 0) result.push(`[${currentStart} - ${currentEnd}] ${texts.join(' ')}`);
+          return result.join('\n');
+        }
+
+        return raw.trim();
+      }
+
+      /* ── Loading micro-copy ── */
+      const LOADING_COPIES = [
+        '스크립트 분석 중...',
+        '후킹 포인트 탐색 중...',
+        '숏폼 구간 선별 중...',
+        '편집 가이드 생성 중...',
+        '기획안 완성 중...',
+      ];
+
+      let copyIdx = 0, copyTimer = null;
+
+      function startLoadingCopy() {
+        copyIdx = 0;
+        ctaBtn.textContent = LOADING_COPIES[0];
+        copyTimer = setInterval(() => {
+          copyIdx = (copyIdx + 1) % LOADING_COPIES.length;
+          ctaBtn.textContent = LOADING_COPIES[copyIdx];
+        }, 5000);
+      }
+
+      function stopLoadingCopy() {
+        clearInterval(copyTimer);
+        ctaBtn.textContent = '숏폼 구간 추출하기';
+      }
+
+      /* ── File input events ── */
+      fileInput.addEventListener('change', function () {
+        if (this.files && this.files[0]) setFile(this.files[0]);
+      });
+
+      dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+      dropzone.addEventListener('dragleave', e => { if (!dropzone.contains(e.relatedTarget)) dropzone.classList.remove('drag-over'); });
+      dropzone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropzone.classList.remove('drag-over');
+        if (e.dataTransfer.files?.[0]) setFile(e.dataTransfer.files[0]);
+      });
+
+      dropzone.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+      });
+
+      /* ── CTA → API call ── */
+      ctaBtn.addEventListener('click', async function () {
+        if (!attachedFile || isLoading) return;
+        isLoading = true;
+        ctaBtn.classList.remove('active');
+        ctaBtn.disabled = true;
+        startLoadingCopy();
+
+        try {
+          const raw = await attachedFile.text();
+          const scriptText = preprocessScript(raw, attachedFile.name);
+          if (!scriptText) throw new Error('파일에서 유효한 스크립트 내용을 찾지 못했습니다.');
+
+          const res = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scriptText }),
+          });
+
+          const json = await res.json();
+          if (!res.ok) throw new Error(json.error || `서버 오류 (${res.status})`);
+
+          sessionStorage.setItem('shortform_result', JSON.stringify(json.data));
+          window.location.href = 'result.html';
+
+        } catch (err) {
+          showToast('⚠ ' + (err.message || '오류가 발생했습니다. 다시 시도해 주세요.'), true);
+          isLoading = false;
+          stopLoadingCopy();
+          updateCTA();
+        }
+      });
+    })();
+  </script>
+
+</body>
+</html>
+

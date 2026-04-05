@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>숏폼 기획안 자동 생성 — 결과</title>
+  <meta name="description" content="AI가 추출한 숏폼 기획안 결과 대시보드입니다." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F8F9FA;
+      --white: #FFFFFF;
+      --primary: #2563EB;
+      --primary-hover: #1D4ED8;
+      --primary-light: #EFF6FF;
+      --border: #E5E7EB;
+      --text: #111827;
+      --text-sub: #6B7280;
+      --text-helper: #9CA3AF;
+      --success-bg: #F0FDF4;
+      --success-border: #BBF7D0;
+      --success-text: #166534;
+      --danger: #EF4444;
+      --radius: 16px;
+      --radius-sm: 8px;
+      --radius-chip: 20px;
+      --shadow: 0 4px 24px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
+      --font: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+      --ease: .2s ease;
+
+      /* Category colors */
+      --cat-summary-bg: #FEF3C7; --cat-summary-text: #92400E;
+      --cat-knowhow-bg: #E0E7FF; --cat-knowhow-text: #3730A3;
+      --cat-insight-bg: #FCE7F3; --cat-insight-text: #9D174D;
+      --cat-news-bg:    #ECFDF5; --cat-news-text:    #065F46;
+      --cat-humor-bg:   #FFF7ED; --cat-humor-text:   #9A3412;
+      --cat-brand-bg:   #F0F9FF; --cat-brand-text:   #0369A1;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── NAV ── */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 56px; background: var(--white);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .navbar__title { font-size: 15px; font-weight: 700; letter-spacing: -.2px; }
+
+    /* ── LAYOUT ── */
+    .main {
+      flex: 1; display: flex;
+      justify-content: center;
+      padding: 80px 24px 60px;
+    }
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 100%; max-width: 760px;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 140px);
+      overflow: hidden;
+    }
+    
+    .card-content-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 40px 40px 24px; /* Scrollable area padding */
+    }
+
+    /* ── ALERT ── */
+    .alert {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 20px;
+    }
+    .alert__text {
+      flex: 1;
+      font-size: 13.5px; font-weight: 500;
+      color: var(--success-text);
+      line-height: 1.5;
+    }
+    .alert__close {
+      background: none; border: none; cursor: pointer;
+      color: #6EE7B7; display: flex;
+      border-radius: 50%; padding: 2px;
+      transition: color var(--ease), background var(--ease);
+    }
+    .alert__close:hover { color: var(--success-text); background: #DCFCE7; }
+    .alert.hidden { display: none; }
+
+    /* ── EXPAND CONTROL ── */
+    .list-control {
+      display: flex; justify-content: flex-end;
+      margin-bottom: 12px;
+    }
+    .btn-toggle-all {
+      background: none; border: none; cursor: pointer;
+      font-family: var(--font);
+      font-size: 13px; font-weight: 500;
+      color: var(--primary);
+      padding: 4px 8px; border-radius: 6px;
+      transition: background var(--ease);
+    }
+    .btn-toggle-all:hover { background: var(--primary-light); }
+
+    /* ── ACCORDION LIST ── */
+    .accordion-list { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+
+    /* ── ACCORDION ITEM ── */
+    .accordion-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: box-shadow var(--ease);
+    }
+    .accordion-item:hover { box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+    .accordion-item.open { border-color: #BFDBFE; box-shadow: 0 2px 12px rgba(37,99,235,.1); }
+
+    .accordion-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 18px;
+      cursor: pointer; user-select: none;
+      background: var(--white);
+      transition: background var(--ease);
+    }
+    .accordion-header:hover { background: var(--bg); }
+    .accordion-item.open .accordion-header { background: var(--primary-light); }
+
+    .cat-chip {
+      flex-shrink: 0;
+      font-size: 11.5px; font-weight: 600;
+      padding: 3px 10px;
+      border-radius: var(--radius-chip);
+      letter-spacing: -.1px;
+      white-space: nowrap;
+    }
+    .cat-핵심\ 요약 { background: #FFF3CD; color: #856404; }
+    .cat-노하우     { background: var(--cat-knowhow-bg); color: var(--cat-knowhow-text); }
+    .cat-인사이트   { background: var(--cat-insight-bg); color: var(--cat-insight-text); }
+    .cat-뉴스       { background: var(--cat-news-bg);    color: var(--cat-news-text);    }
+    .cat-유머\/공감 { background: var(--cat-humor-bg);   color: var(--cat-humor-text);   }
+    .cat-브랜드\/서비스 { background: var(--cat-brand-bg); color: var(--cat-brand-text); }
+
+    .accordion-title {
+      flex: 1; font-size: 14px; font-weight: 600;
+      color: var(--text); letter-spacing: -.2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .chevron {
+      flex-shrink: 0; color: var(--text-sub);
+      transition: transform .25s ease;
+    }
+    .accordion-item.open .chevron { transform: rotate(180deg); }
+
+    /* ── ACCORDION BODY ── */
+    .accordion-body {
+      max-height: 0; overflow: hidden;
+      transition: max-height .3s ease, padding .3s ease;
+      padding: 0 18px;
+    }
+    .accordion-item.open .accordion-body {
+      max-height: 1200px;
+      padding: 0 18px 20px;
+    }
+
+    .body-divider { border: none; border-top: 1px solid var(--border); margin: 0 -18px 18px; }
+
+    /* ── SECTIONS ── */
+    .section { margin-bottom: 18px; }
+    .section:last-child { margin-bottom: 0; }
+    .section-label {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600;
+      color: var(--text-helper);
+      text-transform: uppercase; letter-spacing: .5px;
+      margin-bottom: 8px;
+    }
+    .section-label img {
+      width: 14px; height: 14px;
+      opacity: 0.55;
+      flex-shrink: 0;
+      display: block;
+    }
+
+    /* timestamp */
+    .timestamp-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--primary-light); color: var(--primary);
+      border-radius: 8px; padding: 5px 12px;
+      font-size: 13px; font-weight: 600; letter-spacing: -.1px;
+    }
+
+    /* script plain text */
+    .script-plain {
+      font-size: 13.5px; color: var(--text-sub);
+      line-height: 1.85; letter-spacing: -.1px;
+    }
+    .script-plain p { margin: 0; }
+    .script-plain p + p { margin-top: 6px; }
+
+    /* titles list */
+    .titles-list { display: flex; flex-direction: column; gap: 6px; }
+    .title-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px;
+      background: var(--bg); border-radius: 8px;
+      padding: 9px 12px;
+    }
+    .title-num {
+      flex-shrink: 0; width: 20px; height: 20px;
+      background: #E5E7EB; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: var(--text-sub);
+    }
+    .title-text { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); }
+    .icon-copy-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-helper); font-family: var(--font); font-size: 13px; font-weight: 500;
+      padding: 4px 8px; border-radius: 6px; flex-shrink: 0;
+      transition: color var(--ease), background var(--ease);
+    }
+    .icon-copy-btn:hover { color: var(--primary); background: var(--primary-light); }
+    .icon-copy-btn.copied { color: #16A34A; }
+
+    /* keywords — single row */
+    .keyword-row {
+      display: flex; align-items: center;
+      background: var(--bg); border-radius: 8px;
+      padding: 9px 12px; gap: 10px;
+    }
+    .keyword-text { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); letter-spacing: -.1px; }
+
+    /* edit guide checklist */
+    .guide-grid { display: flex; flex-direction: column; gap: 6px; }
+    .guide-check-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: var(--bg); border-radius: 8px; padding: 10px 12px;
+      cursor: pointer; user-select: none;
+      transition: opacity var(--ease);
+    }
+    .guide-check-item input[type="checkbox"] {
+      margin-top: 2px; flex-shrink: 0;
+      width: 15px; height: 15px; cursor: pointer;
+      accent-color: var(--primary);
+    }
+    .guide-check-label { flex: 1; }
+    .guide-check-type {
+      font-size: 11px; font-weight: 700; color: var(--text-helper);
+      letter-spacing: .3px; margin-bottom: 3px;
+    }
+    .guide-check-text { font-size: 12.5px; color: var(--text-sub); line-height: 1.6; }
+    .guide-check-item.done .guide-check-text {
+      text-decoration: line-through; color: var(--text-helper); opacity: .6;
+    }
+
+    /* individual copy row for accordion */
+    .acc-copy-row {
+      display: flex; justify-content: flex-end; margin-top: 14px;
+    }
+    .acc-copy-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: none; border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 14px; cursor: pointer;
+      font-family: var(--font); font-size: 12px; font-weight: 500;
+      color: var(--text-sub);
+      transition: all var(--ease);
+    }
+    .acc-copy-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+    /* ── FOOTER ── */
+    .footer {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+      padding: 24px 40px 36px;
+      background: var(--white);
+    }
+    .btn-reset {
+      background: none; border: none; cursor: pointer;
+      font-family: var(--font); font-size: 13.5px; font-weight: 500;
+      color: var(--text-sub); display: flex; align-items: center; gap: 6px;
+      padding: 8px 12px; border-radius: 8px;
+      transition: color var(--ease), background var(--ease);
+    }
+    .btn-reset:hover { color: var(--text); background: var(--bg); }
+    .btn-copy-all {
+      background: var(--primary); color: var(--white);
+      border: none; cursor: pointer;
+      font-family: var(--font); font-size: 14px; font-weight: 600;
+      padding: 11px 22px; border-radius: 10px;
+      display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 4px 14px rgba(37,99,235,.3);
+      transition: background var(--ease), box-shadow var(--ease), transform var(--ease);
+    }
+    .btn-copy-all:hover { background: var(--primary-hover); box-shadow: 0 6px 20px rgba(37,99,235,.4); transform: translateY(-1px); }
+    .btn-copy-all:active { transform: none; box-shadow: 0 2px 8px rgba(37,99,235,.3); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #111827; color: #fff;
+      font-family: var(--font); font-size: 13.5px; font-weight: 500;
+      padding: 11px 22px; border-radius: 100px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s ease, transform .25s ease;
+      z-index: 9999; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="navbar">
+    <span class="navbar__title">숏폼 기획안 자동 생성</span>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="card" id="result-card">
+      <div class="card-content-scroll">
+        <!-- ALERT -->
+        <div class="alert" id="success-alert" role="alert">
+          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48ZyBmaWxsPSJjdXJyZW50Q29sb3IiPjxwYXRoIGQ9Ik0xMC4yNDMgMTYuMzE0TDYgMTIuMDdsMS40MTQtMS40MTRsMi44MjkgMi44MjhsNS42NTYtNS42NTdsMS40MTUgMS40MTV6Ii8+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBkPSJNMSAxMkMxIDUuOTI1IDUuOTI1IDEgMTIgMXMxMSA0LjkyNSAxMSAxMXMtNC45MjUgMTEtMTEgMTFTMSAxOC4wNzUgMSAxMm0xMSA5YTkgOSAwIDEgMSAwLTE4YTkgOSAwIDAgMSAwIDE4IiBjbGlwLXJ1bGU9ImV2ZW5vZGQiLz48L2c+PC9zdmc+"
+               alt="" aria-hidden="true" width="18" height="18"
+               style="flex-shrink:0; color: #16A34A; filter: invert(35%) sepia(80%) saturate(500%) hue-rotate(100deg) brightness(90%);" />
+          <p class="alert__text">AI가 롱폼 영상을 분석하여 최적의 숏폼 구간 추출을 완료했습니다.</p>
+          <button class="alert__close" id="alert-close" aria-label="알럿 닫기">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- CONTROL -->
+        <div class="list-control">
+          <button class="btn-toggle-all" id="btn-toggle-all">전체 펼치기</button>
+        </div>
+
+        <!-- ACCORDION LIST -->
+        <div class="accordion-list" id="accordion-list" role="list"></div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="footer">
+        <button class="btn-reset" id="btn-reset">
+          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSJjdXJyZW50Q29sb3IiIGQ9Ik0xNy42NSA2LjM1QTcuOTUgNy45NSAwIDAgMCAxMiA0Yy00LjQyIDAtNy45OSAzLjU4LTcuOTkgOHMzLjU3IDggNy45OSA4YzMuNzMgMCA2Ljg0LTIuNTUgNy43My02aC0yLjhBNS45OSA1Ljk5IDAgMCAxIDEyIDE4Yy0zLjMxIDAtNi0yLjY5LTYtNnMyLjY5LTYgNi02YzEuNjYgMCAzLjE0LjY5IDQuMjIgMS43OEwxMyAxMWg3VjR6Ii8+PC9zdmc+"
+               alt="" aria-hidden="true" width="18" height="18"
+               style="opacity:0.6;flex-shrink:0;" />
+          새로 만들기
+        </button>
+        <button class="btn-copy-all" id="btn-copy-all">전체 기획안 복사</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast" role="status" aria-live="polite">복사되었습니다 ✓</div>
+
+  <script>
+  (function () {
+
+    /* ─── LOAD DATA FROM SESSION STORAGE ──────────────────────── */
+    const _raw = sessionStorage.getItem('shortform_result');
+    let DATA;
+
+    if (_raw) {
+      try {
+        DATA = JSON.parse(_raw);
+        // Assign sequential IDs if missing
+        DATA = DATA.map((d, i) => ({ id: d.id ?? i + 1, ...d }));
+      } catch {
+        DATA = null;
+      }
+    }
+
+    // Fallback: redirect to index if no data (e.g. page refreshed directly)
+    if (!Array.isArray(DATA) || DATA.length === 0) {
+      // Keep mock data for local file:// preview; redirect only when served via HTTP
+      if (window.location.protocol !== 'file:') {
+        window.location.replace('index.html');
+      } else {
+        /* ── DEV MOCK (file:// only) ── */
+        DATA = [
+          {
+            "id": 1,
+            "timestamp": "00:32 - 01:18",
+            "category": "핵심 요약",
+            "script_snippet": "결국 기술 도입보다 중요한 건 구성원들의 마인드셋입니다. 아무리 좋은 툴을 가져와도 사람이 바뀌지 않으면 아무 의미가 없어요.",
+            "on_screen_titles": ["좋은 툴보다 중요한 '이것'","도입 실패하는 회사의 특징","성공하는 조직의 마인드셋","기술 도입, 착각하지 마세요","진짜 효율은 여기서 나옵니다"],
+            "highlight_keywords": ["마인드셋","조직문화","효율200%"],
+            "edit_guide": {"sound_effect":"도입부에 묵직한 베이스의 '우웅' 하는 타격음을 넣어 집중도를 높이세요.","cut_edit":"'아무리 좋은 툴을 가져와도' 대사 직후 0.5초의 정적(퍼즈)을 주어 긴장감을 만드세요.","visual_effect":"화자의 얼굴로 서서히 줌인하면서 화면 테두리에 옅은 비네팅 효과를 주어 진중함을 강조하세요."}
+          },
+          {
+            "id": 2,
+            "timestamp": "02:15 - 03:05",
+            "category": "노하우",
+            "script_snippet": "개발자 없이도 이런 걸 구축할 수 있다는 게 진짜 신기하지 않나요? 노코드 툴만 잘 활용해도 웬만한 MVP는 이틀 안에 만들 수 있습니다.",
+            "on_screen_titles": ["개발자 없이 만든 MVP의 수준","노코드로 이틀 만에 창업하기","이제 코딩 몰라도 됩니다","비개발자의 무기, 노코드 툴","지금 당장 써야 할 툴 TOP3"],
+            "highlight_keywords": ["노코드","MVP","이틀창업","비용절감"],
+            "edit_guide": {"sound_effect":"'이틀 안에' 강조 지점에 리드 인 사운드(상승 효과음)를 삽입해 기대감을 높이세요.","cut_edit":"화자가 툴 이름을 언급하는 순간 화면 2배속 점프컷으로 속도감을 부여하세요.","visual_effect":"노코드 툴 로고들을 오른쪽에서 슬라이드인 시키는 자막 모션으로 시각적 풍성함을 더하세요."}
+          },
+          {
+            "id": 3,
+            "timestamp": "04:50 - 05:40",
+            "category": "인사이트",
+            "script_snippet": "지금 당장 결과가 안 나와도 괜찮아요. 중요한 건 방향입니다. 1년 후의 나를 만드는 건 오늘의 1%짜리 선택들이에요.",
+            "on_screen_titles": ["결과 없어도 괜찮은 이유","1년 후를 결정하는 오늘의 선택","방향이 맞으면 언젠간 됩니다","느려도 괜찮다, 방향만 맞으면","성장하는 사람의 마음가짐"],
+            "highlight_keywords": ["방향","1%선택","성장","장기전"],
+            "edit_guide": {"sound_effect":"잔잔한 피아노 루프를 배경으로 깔아 성찰적인 분위기를 유도하세요.","cut_edit":"'1년 후의 나를 만드는 건' 대사를 슬로우 모션으로 처리해 무게감을 살리세요.","visual_effect":"자막 텍스트에 타이핑 등장 효과를 줘서 메시지가 천천히 새겨지는 느낌을 연출하세요."}
+          }
+        ];
+      }
+    }
+
+    /* sort by timestamp ascending */
+    DATA.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
+    /* ─── CATEGORY COLOR MAP ─────────────────────────────────── */
+    const CAT_CLASS = {
+      '핵심 요약':    'cat-핵심 요약',
+      '노하우':       'cat-노하우',
+      '인사이트':     'cat-인사이트',
+      '뉴스':         'cat-뉴스',
+      '유머/공감':    'cat-유머\\/공감',
+      '브랜드/서비스':'cat-브랜드\\/서비스',
+    };
+
+    /* ─── BUILD ACCORDION ITEMS ──────────────────────────────── */
+    const list = document.getElementById('accordion-list');
+    const iconCopy = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+
+    DATA.forEach((item, idx) => {
+      const catClass = CAT_CLASS[item.category] || 'cat-노하우';
+
+      const el = document.createElement('div');
+      el.className = 'accordion-item';
+      el.setAttribute('role', 'listitem');
+      el.dataset.id = item.id;
+
+      el.innerHTML = `
+        <div class="accordion-header" tabindex="0" aria-expanded="false" role="button"
+             aria-controls="body-${item.id}">
+          <span class="cat-chip ${catClass}">${item.category}</span>
+          <span class="accordion-title">${item.on_screen_titles[0]}</span>
+          <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+
+        <div class="accordion-body" id="body-${item.id}" aria-hidden="true">
+          <hr class="body-divider" />
+
+          <!-- Timestamp -->
+          <div class="section">
+            <p class="section-label"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSJjdXJyZW50Q29sb3IiIGQ9Ik05IDNWMWg2djJ6bTIgMTFoMlY4aC0yem0tMi40ODggNy4yODhxLTEuNjM3LS43MTMtMi44NjItMS45Mzh0LTEuOTM3LTIuODYzVDMgMTN0LjcxMy0zLjQ4OFQ1LjY1IDYuNjV0Mi44NjMtMS45MzdUMTIgNHExLjU1IDAgMi45NzUuNXQyLjY3NSAxLjQ1bDEuNC0xLjRsMS40IDEuNGwtMS40IDEuNFEyMCA4LjYgMjAuNSAxMC4wMjVUMjEgMTNxMCAxLjg1LS43MTMgMy40ODhUMTguMzUgMTkuMzV0LTIuODYzIDEuOTM4VDEyIDIydC0zLjQ4OC0uNzEybTguNDM4LTMuMzM4UTE5IDE1LjkgMTkgMTN0LTIuMDUtNC45NVQxMiA2VDcuMDUgOC4wNVQ1IDEzdDIuMDUgNC45NVQxMiAyMHQ0Ljk1LTIuMDVNMTIgMTMiLz48L3N2Zz4=" alt="" aria-hidden="true">타임스탬프</p>
+            <span class="timestamp-badge">${item.timestamp}</span>
+          </div>
+
+          <!-- Script -->
+          <div class="section">
+            <p class="section-label"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSJjdXJyZW50Q29sb3IiIGQ9Ik0xMSAxN2gydi02aC0yem0xLjcxMy04LjI4N1ExMyA4LjQyNSAxMyA4dC0uMjg4LS43MTJUMTIgN3QtLjcxMi4yODhUMTEgOHQuMjg4LjcxM1QxMiA5dC43MTMtLjI4OE0xMiAyMnEtMi4wNzUgMC0zLjktLjc4OHQtMy4xNzUtMi4xMzdUMi43ODggMTUuOVQyIDEydC43ODgtMy45dDIuMTM3LTMuMTc1VDguMSAyLjc4OFQxMiAydDMuOS43ODh0My4xNzUgMi4xMzdUMjEuMjEzIDguMVQyMiAxMnQtLjc4OCAzLjl0LTIuMTM3IDMuMTc1dC0zLjE3NSAyLjEzOFQxMiAyMm0wLTJxMy4zNSAwIDUuNjc1LTIuMzI1VDIwIDEydC0yLjMyNS01LjY3NVQxMiA0VDYuMzI1IDYuMzI1VDQgMTJ0Mi4zMjUgNS42NzVUMTIgMjBtMC04Ii8+PC9zdmc+" alt="" aria-hidden="true">주요 대사</p>
+            <div class="script-plain">${item.script_snippet ? item.script_snippet.split('\\n').filter(s=>s.trim()).map(s => `<p>${s}</p>`).join('') : ''}</div>
+          </div>
+
+          <!-- Titles -->
+          <div class="section">
+            <p class="section-label" style="flex-wrap:wrap; gap:4px 6px;">
+              <span style="display:flex;align-items:center;gap:5px;"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSI0Ij48cGF0aCBkPSJNNCAxMGEyIDIgMCAwIDEgMi0yaDM2YTIgMiAwIDAgMSAyIDJ2MjhhMiAyIDAgMCAxLTIgMkg2YTIgMiAwIDAgMS0yLTJ6Ii8+PHBhdGggc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBkPSJNMzYgOHYzMk0xMiA4djMybTI2LTIyaDZtLTYgMTJoNk00IDE4aDZtLTYtMnY0TTkgOGg2TTkgNDBoNk0zMyA4aDZtLTYgMzJoNk00IDMwaDZtLTYtMnY0bTQwLTR2NG0wLTE2djQiLz48cGF0aCBkPSJtMjEgMTlsOCA1bC04IDV6Ii8+PC9nPjwvc3ZnPg==" alt="" aria-hidden="true">숏폼 제목 5종</span>
+              <span style="font-size:11px;font-weight:400;color:var(--text-helper);letter-spacing:0;text-transform:none;">(마음에 드는 제목을 자유롭게 선택하세요)</span>
+            </p>
+            <ul class="titles-list" style="list-style:none;">
+              ${item.on_screen_titles.map((t, i) => `
+                <li class="title-row">
+                  <span class="title-num">${i + 1}</span>
+                  <span class="title-text">${t}</span>
+                  <button class="icon-copy-btn" data-copy="${t.replace(/"/g, '&quot;')}" aria-label="자막 복사: ${t.replace(/"/g, '')}" title="복사">
+                    ${iconCopy}
+                  </button>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+
+          <!-- Keywords -->
+          <div class="section">
+            <p class="section-label"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSJjdXJyZW50Q29sb3IiIGQ9Ik0xOCAxMGMwLTQuNDEtMy41OS04LTgtOHMtOCAzLjU5LTggOHMzLjU5IDggOCA4YzEuODUgMCAzLjU0LS42MyA0LjktMS42OWw1LjEgNS4xTDIxLjQxIDIwbC01LjEtNS4xQTggOCAwIDAgMCAxOCAxME00IDEwYzAtMy4zMSAyLjY5LTYgNi02czYgMi42OSA2IDZzLTIuNjkgNi02IDZzLTYtMi42OS02LTYiLz48L3N2Zz4=" alt="" aria-hidden="true">강조 키워드</p>
+            <div class="keyword-row">
+              <span class="keyword-text">${item.highlight_keywords.map(k => k.startsWith('#') ? k : '#' + k).join('  ')}</span>
+              <button class="icon-copy-btn" data-copy="${item.highlight_keywords.map(k => k.startsWith('#') ? k : '#' + k).join(' ')}" aria-label="키워드 복사" title="복사">
+                ${iconCopy}
+              </button>
+            </div>
+          </div>
+
+          <!-- Edit Guide -->
+          <div class="section">
+            <p class="section-label"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSJjdXJyZW50Q29sb3IiIGQ9Ik01IDIxaDE0YzEuMSAwIDItLjkgMi0ydi03aC0ydjdINVY1aDdWM0g1Yy0xLjEgMC0yIC45LTIgMnYxNGMwIDEuMS45IDIgMiAyIi8+PHBhdGggZmlsbD0iY3VycmVudENvbG9yIiBkPSJNNyAxM3YzYzAgLjU1LjQ1IDEgMSAxaDNjLjI3IDAgLjUyLS4xMS43MS0uMjlsOS05YS45OTYuOTk2IDAgMCAwIDAtMS40MWwtMy0zYS45OTYuOTk2IDAgMCAwLTEuNDEgMGwtOS4wMSA4Ljk5QTEgMSAwIDAgMCA3IDEzbTEwLTcuNTlMMTguNTkgN0wxNy41IDguMDlMMTUuOTEgNi41em0tOCA4bDUuNS01LjVsMS41OSAxLjU5bC01LjUgNS41SDl6Ii8+PC9zdmc+" alt="" aria-hidden="true">영상 편집 가이드</p>
+            <div class="guide-grid">
+              <label class="guide-check-item">
+                <input type="checkbox" aria-label="효과음/BGM 체크" />
+                <div class="guide-check-label">
+                  <p class="guide-check-type">효과음/BGM</p>
+                  <p class="guide-check-text">${item.edit_guide?.sound_effect || ''}</p>
+                </div>
+              </label>
+              <label class="guide-check-item">
+                <input type="checkbox" aria-label="컷편집/호흡 체크" />
+                <div class="guide-check-label">
+                  <p class="guide-check-type">컷편집/호흡</p>
+                  <p class="guide-check-text">${item.edit_guide?.cut_edit || ''}</p>
+                </div>
+              </label>
+              <label class="guide-check-item">
+                <input type="checkbox" aria-label="화면/자막 모션 체크" />
+                <div class="guide-check-label">
+                  <p class="guide-check-type">화면/자막 모션</p>
+                  <p class="guide-check-text">${item.edit_guide?.visual_effect || ''}</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Copy this card -->
+          <div class="acc-copy-row">
+            <button class="acc-copy-btn" data-card-id="${item.id}" aria-label="이 기획안 복사">
+              기획안 복사
+            </button>
+          </div>
+        </div>
+      `;
+
+      list.appendChild(el);
+    });
+
+    /* ─── ACCORDION TOGGLE ───────────────────────────────────── */
+    function isOpen(item) { return item.classList.contains('open'); }
+
+    function openItem(item) {
+      item.classList.add('open');
+      const hdr = item.querySelector('.accordion-header');
+      const body = item.querySelector('.accordion-body');
+      hdr.setAttribute('aria-expanded', 'true');
+      body.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeItem(item) {
+      item.classList.remove('open');
+      const hdr = item.querySelector('.accordion-header');
+      const body = item.querySelector('.accordion-body');
+      hdr.setAttribute('aria-expanded', 'false');
+      body.setAttribute('aria-hidden', 'true');
+    }
+
+    list.addEventListener('click', function (e) {
+      const hdr = e.target.closest('.accordion-header');
+      if (!hdr) return;
+      const item = hdr.closest('.accordion-item');
+      isOpen(item) ? closeItem(item) : openItem(item);
+      updateToggleBtn();
+    });
+
+    list.addEventListener('keydown', function (e) {
+      const hdr = e.target.closest('.accordion-header');
+      if (!hdr) return;
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const item = hdr.closest('.accordion-item');
+        isOpen(item) ? closeItem(item) : openItem(item);
+        updateToggleBtn();
+      }
+    });
+
+    /* ─── EXPAND / COLLAPSE ALL ──────────────────────────────── */
+    const btnToggle = document.getElementById('btn-toggle-all');
+    let allExpanded = false;
+
+    function updateToggleBtn() {
+      const items = list.querySelectorAll('.accordion-item');
+      const allOpen = Array.from(items).every(it => isOpen(it));
+      allExpanded = allOpen;
+      btnToggle.textContent = allOpen ? '전체 닫기' : '전체 펼치기';
+    }
+
+    btnToggle.addEventListener('click', function () {
+      const items = list.querySelectorAll('.accordion-item');
+      allExpanded = !allExpanded;
+      items.forEach(it => allExpanded ? openItem(it) : closeItem(it));
+      btnToggle.textContent = allExpanded ? '전체 닫기' : '전체 펼치기';
+    });
+
+    /* ─── ALERT CLOSE ────────────────────────────────────────── */
+    document.getElementById('alert-close').addEventListener('click', function () {
+      document.getElementById('success-alert').classList.add('hidden');
+    });
+
+    /* ─── TOAST ──────────────────────────────────────────────── */
+    let toastTimer;
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    /* ─── COPY HELPERS ───────────────────────────────────────── */
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+      }
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      return Promise.resolve();
+    }
+
+    function cardToMarkdown(item) {
+      return [
+        `## [${item.category}] ${item.on_screen_titles[0]}`,
+        `**타임스탬프:** ${item.timestamp}`,
+        '',
+        `**맥락 요약:** ${item.script_snippet}`,
+        '',
+        '**숏폼 제목 5종:**',
+        item.on_screen_titles.map((t, i) => `${i + 1}. ${t}`).join('\n'),
+        '',
+        `**강조 키워드:** ${item.highlight_keywords.map(k => k.startsWith('#') ? k : '#' + k).join(' ')}`,
+        '',
+        '**편집 가이드:**',
+        `- 🎵 효과음/BGM: ${item.edit_guide.sound_effect}`,
+        `- ✂️ 컷편집: ${item.edit_guide.cut_edit}`,
+        `- ✨ 시각효과: ${item.edit_guide.visual_effect}`,
+      ].join('\n');
+    }
+
+    /* ─── INDIVIDUAL COPY BUTTONS ────────────────────────────── */
+    list.addEventListener('click', function (e) {
+      /* copy any data-copy button (titles or keywords) */
+      const btn = e.target.closest('button[data-copy]');
+      if (btn) {
+        copyText(btn.dataset.copy).then(() => {
+          const original = btn.textContent;
+          btn.textContent = '✓';
+          btn.classList.add('copied');
+          showToast('복사되었습니다 ✓');
+          setTimeout(() => {
+            btn.textContent = original;
+            btn.classList.remove('copied');
+          }, 1800);
+        });
+        return;
+      }
+
+      /* copy whole card */
+      const cardBtn = e.target.closest('.acc-copy-btn[data-card-id]');
+      if (cardBtn) {
+        const id = parseInt(cardBtn.dataset.cardId, 10);
+        const item = DATA.find(d => d.id === id);
+        if (!item) return;
+        copyText(cardToMarkdown(item)).then(() => {
+          cardBtn.textContent = '✓ 복사 완료';
+          showToast('기획안이 클립보드에 복사됐습니다 ✓');
+          setTimeout(() => {
+            cardBtn.textContent = '기획안 복사';
+          }, 1800);
+        });
+      }
+    });
+
+    /* ─── COPY ALL ───────────────────────────────────────────── */
+    document.getElementById('btn-copy-all').addEventListener('click', function () {
+      const text = DATA.map(cardToMarkdown).join('\n\n---\n\n');
+      copyText(text).then(() => showToast('전체 기획안이 복사되었습니다 ✓'));
+    });
+
+    /* ─── GUIDE CHECKLIST ────────────────────────────────────── */
+    list.addEventListener('change', function (e) {
+      const cb = e.target.closest('input[type="checkbox"]');
+      if (!cb) return;
+      const item = cb.closest('.guide-check-item');
+      if (item) item.classList.toggle('done', cb.checked);
+    });
+
+    /* ─── RESET ──────────────────────────────────────────────── */
+    document.getElementById('btn-reset').addEventListener('click', function () {
+      window.location.href = 'index.html';
+    });
+
+  })();
+  </script>
+</body>
+</html>
