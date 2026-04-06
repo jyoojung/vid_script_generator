@@ -7,9 +7,19 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 const SYSTEM_PROMPT = `너는 기업 및 브랜드 홍보 영상 숏폼 기획을 전문으로 하는 10년 차 베테랑 영상 편집자이자 콘텐츠 전략가야. 제공된 타임스탬프가 포함된 롱폼 스크립트를 분석해서, 숏폼(30초~1분 분량)으로 만들기 가장 좋은 핵심 하이라이트 구간들을 선정해 줘.
 
+[추출 및 분류 가이드]
+1. 분량 확보 (필수): 각 타임스탬프 구간은 컷편집을 위한 앞뒤 여유 공간(Pre-roll & Post-roll)을 고려하여 원본 영상 기준 최소 60초에서 최대 120초(2분) 분량으로 넉넉하게 잡을 것. 30초 미만의 짧은 구간 추출은 절대 지양할 것.
+2. 카테고리 정의:
+    - 핵심 요약: 영상 전체의 주제 의식이나 서론-본론-결론이 1분 내외로 함축된 구간.
+    - 노하우: "어떻게(How-to)"에 대한 구체적인 팁, 방법론, 실용적인 정보가 포함된 구간.
+    - 인사이트: 고정관념을 깨거나, 비즈니스 통찰, 트렌드 분석 등 새로운 관점이 뚜렷한 구간.
+    - 뉴스: 통계 데이터, 사실 중심, 최신 소식 등 정보 밀도가 높은 구간.
+    - 유머/공감: 시청자의 웃음을 유발하거나 정서적 공감을 이끌어내는 인간적인 구간.
+    - 브랜드/서비스: 서비스의 강점, 기업의 가치관, 고객 후기 등 직접적인 홍보/소개 구간.
+
 [작성 지침]
-1. 추출 개수 (절대 규칙): 영상의 길이에 상관없이 무조건 **최소 3개에서 최대 5개**의 숏폼 기획안을 추출할 것. 반환하는 JSON 배열의 데이터 개수가 1개나 2개가 되어서는 절대 안 됨.
-2. 카테고리 필수 포함 및 다양성: 반환하는 배열의 첫 번째(index 0) 객체는 무조건 '핵심 요약'이어야 함. 두 번째, 세 번째 객체부터는 [노하우, 인사이트, 뉴스, 유머/공감, 브랜드/서비스] 중 맥락에 맞는 다른 카테고리를 무조건 할당하여, 최소 3개 이상의 다양한 기획안 세트를 완성할 것.
+1. 추출 개수 (절대 규칙): 영상의 길이에 상관없이 무조건 최소 3개에서 최대 5개의 숏폼 기획안을 추출할 것. 반환하는 JSON 배열의 데이터 개수가 1개나 2개가 되어서는 절대 안 됨.
+2. 맥락 맞춤형 카테고리 할당 (중복 허용): 반환하는 배열의 첫 번째(index 0) 객체는 무조건 '핵심 요약'이어야 함. 나머지 구간은 영상의 전반적인 성격(예: 정보성 강연, 예능 등)에 맞춰 특정 카테고리(예: 인사이트 3개, 혹은 유머/공감 2개 등)가 2개 이상 중복되어 할당되어도 무방함. 단, 동일한 카테고리가 중복 추출될 경우, 각 기획안은 서로 완전히 다른 대사 구간과 차별화된 메시지를 다루어야 하며 절대 서로 내용이 겹치거나 반복되어서는 안 됨.
 3. on_screen_titles: 영상 첫 3초 화면 정중앙에 시선을 끌 오프닝 자막 베리에이션 5가지를 제안할 것. (기업/브랜드에 맞는 신뢰감 있는 톤을 유지하되, 클릭을 유도하는 트렌디한 문구를 1~2개 섞어서 구성할 것)
 4. highlight_keywords: 자막 편집 시 강조하거나 해시태그(#)로 활용할 단어 3~5개를 추출할 것. 무조건 2~6자 이내의 짧은 '명사형' 단어로 압축하며, 시청자의 이목을 끄는 직관적인 단어(예: 칼퇴근, 노코드, 비용절감, 충격 등)를 우선 선정할 것.
 5. script_snippet: 편집자가 맥락을 즉시 파악하도록 해당 구간의 실제 대사 첫 2~3문장을 추출하되, 읽기 편하도록 반드시 문장(온점) 단위로 줄바꿈하여 제공할 것.
@@ -79,7 +89,7 @@ module.exports = async function handler(req, res) {
         { role: 'user', content: scriptText.trim() },
       ],
       temperature: 0.7,
-      response_format: { type: 'json_object' },
+      // NOTE: response_format: json_object 는 배열 반환을 막으므로 사용하지 않음
     });
 
     const raw = completion.choices[0].message.content;
@@ -98,13 +108,22 @@ module.exports = async function handler(req, res) {
       const obj = JSON.parse(cleanedRaw);
 
       if (Array.isArray(obj)) {
+        // 정상: GPT가 배열을 바로 반환한 경우
         parsed = obj;
       } else if (obj.result && Array.isArray(obj.result)) {
         parsed = obj.result;
       } else if (obj.data && Array.isArray(obj.data)) {
         parsed = obj.data;
-      } else if (typeof obj === 'object') {
-        parsed = [obj]; // Wrap single object into array
+      } else if (obj.plans && Array.isArray(obj.plans)) {
+        parsed = obj.plans;
+      } else if (typeof obj === 'object' && obj !== null) {
+        // 숫자 키 객체 {"0":{...}, "1":{...}} 형태 처리
+        const values = Object.values(obj);
+        if (values.length > 0 && values.every(v => typeof v === 'object' && v !== null)) {
+          parsed = values;
+        } else {
+          parsed = [obj];
+        }
       } else {
         parsed = [];
       }
