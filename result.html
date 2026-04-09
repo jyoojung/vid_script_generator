@@ -371,6 +371,7 @@
             "id": 1,
             "timestamp": "00:32 - 01:18",
             "category": "핵심 요약",
+            "card_title": "조직 마인드셋",
             "script_snippet": "결국 기술 도입보다 중요한 건 구성원들의 마인드셋입니다. 아무리 좋은 툴을 가져와도 사람이 바뀌지 않으면 아무 의미가 없어요.",
             "on_screen_titles": ["좋은 툴보다 중요한 '이것'","도입 실패하는 회사의 특징","성공하는 조직의 마인드셋","기술 도입, 착각하지 마세요","진짜 효율은 여기서 나옵니다"],
             "highlight_keywords": ["마인드셋","조직문화","효율200%"],
@@ -380,6 +381,7 @@
             "id": 2,
             "timestamp": "02:15 - 03:05",
             "category": "노하우",
+            "card_title": "노코드 MVP",
             "script_snippet": "개발자 없이도 이런 걸 구축할 수 있다는 게 진짜 신기하지 않나요? 노코드 툴만 잘 활용해도 웬만한 MVP는 이틀 안에 만들 수 있습니다.",
             "on_screen_titles": ["개발자 없이 만든 MVP의 수준","노코드로 이틀 만에 창업하기","이제 코딩 몰라도 됩니다","비개발자의 무기, 노코드 툴","지금 당장 써야 할 툴 TOP3"],
             "highlight_keywords": ["노코드","MVP","이틀창업","비용절감"],
@@ -389,6 +391,7 @@
             "id": 3,
             "timestamp": "04:50 - 05:40",
             "category": "인사이트",
+            "card_title": "방향성의 중요성",
             "script_snippet": "지금 당장 결과가 안 나와도 괜찮아요. 중요한 건 방향입니다. 1년 후의 나를 만드는 건 오늘의 1%짜리 선택들이에요.",
             "on_screen_titles": ["결과 없어도 괜찮은 이유","1년 후를 결정하는 오늘의 선택","방향이 맞으면 언젠간 됩니다","느려도 괜찮다, 방향만 맞으면","성장하는 사람의 마음가짐"],
             "highlight_keywords": ["방향","1%선택","성장","장기전"],
@@ -412,7 +415,7 @@
     };
 
     /* ─── RENDER TOTAL COUNT ─────────────────────────────────── */
-    document.getElementById('total-count-text').textContent = `총 숏폼 개수: ${DATA.length}개`;
+    document.getElementById('total-count-text').innerHTML = `총 숏폼 개수: <span style="color: var(--primary);">${DATA.length}</span>개`;
 
     /* ─── BUILD ACCORDION ITEMS ──────────────────────────────── */
     const list = document.getElementById('accordion-list');
@@ -430,7 +433,7 @@
         <div class="accordion-header" tabindex="0" aria-expanded="false" role="button"
              aria-controls="body-${item.id}">
           <span class="cat-chip ${catClass}">${item.category}</span>
-          <span class="accordion-title">${item.on_screen_titles[0]}</span>
+          <span class="accordion-title">${item.card_title || item.on_screen_titles[0]}</span>
           <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6 9 12 15 18 9"/>
